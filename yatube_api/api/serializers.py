@@ -1,6 +1,5 @@
 import base64
 
-from django.shortcuts import get_object_or_404
 from django.core.files.base import ContentFile
 from posts.models import Post, Comment, Group, Follow, User
 from rest_framework import serializers
@@ -44,7 +43,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
 class FollowSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
-    following = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    following = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all())
 
     class Meta:
         model = Follow
@@ -53,12 +52,6 @@ class FollowSerializer(serializers.ModelSerializer):
             UniqueTogetherValidator(queryset=Follow.objects.all(), fields=('user', 'following'),
                                     message='Вы уже подписывались на этого автора')
         ]
-
-    def to_internal_value(self, data):
-        following = data.get('following')
-        following_pk = get_object_or_404(User, username=following)
-        data.update({'following': following_pk.pk})
-        return super().to_internal_value(data)
 
     def validate(self, data):
         if self.context['request'].user == data['following']:
